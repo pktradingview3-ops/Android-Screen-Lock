@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.provider.Settings
 import com.timewall.app.domain.WallpaperConfig
 import com.timewall.app.render.WallpaperRenderer
 import com.timewall.app.wallpaper.TimeWallpaperService
@@ -37,7 +38,19 @@ object WallpaperActions {
     }
 
     /**
-     * Static fallback: renders the time NOW and sets it as the lock-screen image only.
+     * Opens the phone's lock-screen / security settings, where the user can change or hide the
+     * phone's own lock-screen clock. TimeWall cannot change that setting itself.
+     */
+    fun openLockScreenSettings(context: Context): Result<Unit> = runCatching {
+        try {
+            context.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+
+    /**
+     * Static lock-screen image: renders the time NOW and sets it as the lock-screen image only.
      * The time in that image does not update. Must be called off the main thread.
      */
     fun setLockScreenSnapshot(context: Context, config: WallpaperConfig): Result<Unit> = runCatching {

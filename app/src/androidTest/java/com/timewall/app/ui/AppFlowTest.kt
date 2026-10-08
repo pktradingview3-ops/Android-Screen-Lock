@@ -168,6 +168,12 @@ class AppFlowTest {
     }
 
     @Test
+    fun editor_hasLockScreenSettingsButton() {
+        openEditor()
+        composeRule.onNodeWithTag("btn_lock_settings").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun home_showsVersionLabel() {
         composeRule.onNodeWithTag("version_label").assertIsDisplayed()
     }

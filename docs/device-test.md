@@ -2,7 +2,7 @@
 
 Automated checks already passing in CI (Android 11 / API 30 emulator, 22 tests): all screens and buttons work, layouts draw correctly, and the static lock-screen image is set successfully. The checks below are what only a real phone can confirm.
 
-Before testing: confirm the app version at the bottom of the first screen says **0.1.1 (build 2)**. If it says 0.1.0, install the newer APK.
+Before testing: confirm the app version at the bottom of the first screen says **0.1.2 (build 3)**. If it says an older version, install the newer APK.
 
 Goal: decide whether live time shows on the lock screen, and whether a static snapshot works.
 

@@ -45,6 +45,8 @@ import com.timewall.app.domain.LayoutId
 import com.timewall.app.domain.Orientation
 import com.timewall.app.domain.WallpaperConfig
 import kotlinx.coroutines.Dispatchers
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -243,7 +245,8 @@ fun EditorScreen(
 
         HorizontalDivider()
 
-        Text("Apply", style = MaterialTheme.typography.titleMedium)
+        Text("Where to show TimeWall", style = MaterialTheme.typography.titleMedium)
+
         Button(
             onClick = {
                 WallpaperActions.openLiveWallpaperPreview(context)
@@ -255,11 +258,10 @@ fun EditorScreen(
                 .fillMaxWidth()
                 .testTag("btn_live"),
         ) {
-            Text("Set live wallpaper (recommended)")
+            Text("Home and lock screen (live time)")
         }
         Text(
-            "Time updates every minute. The system preview opens and you confirm there. " +
-                "On some phones the live wallpaper applies to Home and Lock screen together.",
+            "Recommended. The time updates every minute. The system preview opens and you confirm there.",
             style = MaterialTheme.typography.bodySmall,
         )
 
@@ -274,7 +276,10 @@ fun EditorScreen(
                     }
                     busy = false
                     status = result.fold(
-                        onSuccess = { "Lock screen image set. The time in it will NOT update." },
+                        onSuccess = {
+                            val at = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                            "Lock screen image set at $at. Its time does not update. Tap again to refresh it."
+                        },
                         onFailure = { "Could not set lock screen image: ${it.message}" },
                     )
                 }
@@ -283,12 +288,37 @@ fun EditorScreen(
                 .fillMaxWidth()
                 .testTag("btn_static"),
         ) {
-            Text("Set lock screen snapshot (static)")
+            Text("Lock screen only (still image)")
         }
         Text(
-            "Fallback only. Applies immediately, and the time is frozen at the moment you tap.",
+            "Use this to show TimeWall only on the lock screen. Android cannot keep a live clock on " +
+                "the lock screen alone, so this image shows the time from when you tap. The home " +
+                "screen stays as it was.",
             style = MaterialTheme.typography.bodySmall,
         )
+
+        HorizontalDivider()
+
+        Text("The phone's own clock", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "vivo can show its own clock on the lock screen too. TimeWall cannot hide it, because " +
+                "that is a phone setting. Open the lock screen settings below and change or turn off " +
+                "the clock there, then check the lock screen again.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        OutlinedButton(
+            onClick = {
+                WallpaperActions.openLockScreenSettings(context)
+                    .onFailure {
+                        status = "Could not open settings. Open Settings > Lock screen, home screen and wallpaper."
+                    }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_lock_settings"),
+        ) {
+            Text("Open lock screen settings")
+        }
 
         status?.let {
             Text(
@@ -345,10 +375,18 @@ fun HelpScreen(onBack: () -> Unit) {
                 "background, set Battery > App battery usage to Unrestricted for TimeWall.",
         )
 
-        Text("Lock screen snapshot", style = MaterialTheme.typography.titleMedium)
+        Text("Two clocks on the lock screen?", style = MaterialTheme.typography.titleMedium)
         Text(
-            "This sets a still image with the time at the moment you tap. Use it only if the " +
-                "live wallpaper does not work on your phone.",
+            "Your vivo can show its own clock on the lock screen. TimeWall cannot turn it off, " +
+                "because it is a phone setting. Use Edit > Open lock screen settings, and change " +
+                "the clock style or turn it off if your phone allows it.",
+        )
+
+        Text("Lock screen only", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Android does not allow a live clock on the lock screen alone on most phones. " +
+                "\"Lock screen only\" sets a still image with the time from when you tap. " +
+                "Tap it again to update the time.",
         )
     }
 }
