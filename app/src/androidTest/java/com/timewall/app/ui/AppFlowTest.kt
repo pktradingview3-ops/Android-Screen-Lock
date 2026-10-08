@@ -64,6 +64,7 @@ class AppFlowTest {
     fun home_tappingLayoutSelectsIt() {
         selectLayout(LayoutId.L2)
         composeRule.onNodeWithTag("layout_L2").assertIsSelected()
+        scrollToLayout(LayoutId.L1)
         composeRule.onNodeWithTag("layout_L1").assertIsNotSelected()
     }
 
@@ -138,6 +139,7 @@ class AppFlowTest {
         openEditor()
         composeRule.onNodeWithTag("chip_24h").performClick()
         composeRule.onNodeWithTag("btn_back").performClick()
+        scrollToLayout(LayoutId.L4)
         composeRule.onNodeWithTag("layout_L4").assertIsSelected()
         openEditor()
         composeRule.onNodeWithTag("chip_24h").assertIsSelected()
@@ -162,7 +164,7 @@ class AppFlowTest {
         }
         composeRule.onAllNodes(hasText("Could not set", substring = true))
             .assertCountEquals(0)
-        composeRule.onNodeWithTag("status").assertIsDisplayed()
+        composeRule.onNodeWithTag("status").performScrollTo().assertIsDisplayed()
     }
 
     @Test
