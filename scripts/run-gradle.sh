@@ -38,6 +38,17 @@ for f in files:
             msg = (node.get("message") or "")[:250]
             print(f"::error::TEST FAILED {tc.get('classname')}.{tc.get('name')}: {msg} || " + " | ".join(lines))
 print(f"::notice::Test results: {total} run, {failed} failed (from {len(files)} result files)")
+if files and total == 0 and any("androidTest" in f for f in files):
+    print("::error::Instrumented tests ran 0 test cases. Showing UTP log lines:")
+    for lg in glob.glob("app/build/outputs/androidTest-results/**/*.log", recursive=True):
+        try:
+            lines = open(lg, errors="replace").read().splitlines()
+        except Exception:
+            continue
+        hits = [l for l in lines if any(k in l.lower() for k in ("instrument", "exception", "error", "test", "crash", "fail", "warn"))]
+        for l in hits[:25]:
+            print(f"::error::[{lg.split('/')[-1]}] {l[:300]}")
+    raise SystemExit(1)
 import os
 for d in ["app/build/outputs", "app/build/reports"]:
     for root_dir, dirs, names in os.walk(d):
