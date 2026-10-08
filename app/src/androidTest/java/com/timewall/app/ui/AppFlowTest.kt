@@ -1,9 +1,9 @@
 package com.timewall.app.ui
 
 import android.content.Context
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,7 +46,7 @@ class AppFlowTest {
     fun home_showsAllFiveLayouts() {
         composeRule.onNodeWithTag("picker_screen").assertIsDisplayed()
         LayoutId.values().forEach { layout ->
-            composeRule.onNodeWithTag("layout_${layout.name}").assertExists()
+            composeRule.onNodeWithTag("layout_${layout.name}").fetchSemanticsNode()
         }
     }
 
@@ -59,7 +59,7 @@ class AppFlowTest {
     fun home_tappingLayoutSelectsIt() {
         composeRule.onNodeWithTag("layout_L2").performClick()
         composeRule.onNodeWithTag("layout_L2").assertIsSelected()
-        composeRule.onNodeWithTag("layout_L1").assertIsNotSelectedForTest()
+        composeRule.onNodeWithTag("layout_L1").assertIsNotSelected()
     }
 
     @Test
@@ -97,7 +97,7 @@ class AppFlowTest {
         composeRule.onNodeWithTag("chip_12h").assertIsSelected()
         composeRule.onNodeWithTag("chip_24h").performClick()
         composeRule.onNodeWithTag("chip_24h").assertIsSelected()
-        composeRule.onNodeWithTag("chip_12h").assertIsNotSelectedForTest()
+        composeRule.onNodeWithTag("chip_12h").assertIsNotSelected()
     }
 
     @Test
@@ -117,14 +117,14 @@ class AppFlowTest {
     fun editor_nameFieldLimitsTo20Characters() {
         openEditor()
         composeRule.onNodeWithTag("name_field").performTextInput("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        composeRule.onNodeWithText("20/20").assertExists()
+        composeRule.onNodeWithText("20/20").fetchSemanticsNode()
     }
 
     @Test
     fun editor_nameFieldShowsCounter() {
         openEditor()
         composeRule.onNodeWithTag("name_field").performTextInput("Ayush")
-        composeRule.onNodeWithText("6/20").assertExists()
+        composeRule.onNodeWithText("6/20").fetchSemanticsNode()
     }
 
     @Test
@@ -141,8 +141,8 @@ class AppFlowTest {
     @Test
     fun editor_liveButtonExists() {
         openEditor()
-        composeRule.onNodeWithTag("btn_live").assertExists()
-        composeRule.onNodeWithTag("btn_static").assertExists()
+        composeRule.onNodeWithTag("btn_live").fetchSemanticsNode()
+        composeRule.onNodeWithTag("btn_static").fetchSemanticsNode()
     }
 
     // ---- helpers
@@ -152,10 +152,4 @@ class AppFlowTest {
         composeRule.onNodeWithTag("editor_screen").assertIsDisplayed()
     }
 
-    private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertIsNotSelectedForTest() {
-        // Compose has no assertIsNotSelected in every version; assert the selected state is absent.
-        val node = fetchSemanticsNode()
-        val selected = node.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Selected)
-        check(selected != true) { "Expected node not to be selected" }
-    }
 }
