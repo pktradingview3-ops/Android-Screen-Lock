@@ -34,7 +34,7 @@ To show the current time on the lock screen, the options are:
 
 ## 4. Target Platform
 
-- Language: Kotlin (proposed; pending user confirmation)
+- Language: Kotlin (confirmed by user)
 - UI: Jetpack Compose (for the app's own screens)
 - minSdk: 26 (Android 8.0), so it installs on the Y31 and a wide range of phones
 - targetSdk: latest stable at build time
@@ -176,10 +176,10 @@ Settings the user must do manually (app shows step-by-step help, never automates
 | Font licence | Legal | Use a font with a permissive licence; record licence in repo |
 | User expects a fully custom system lock screen | Scope confusion | Clear "What this app can and cannot do" text in Help and README |
 
-## 13. Open Decisions (need user confirmation)
+## 13. Decisions
 
-1. **Live time vs static:** Is live time (Option A, may need "Home + Lock") acceptable, or should v1 be static snapshot only (Option B)?
-2. **Tech stack:** Kotlin + Jetpack Compose (recommended) or Flutter?
+1. **Live time (Option A):** CONFIRMED by user. Phase 0 device test decides whether lock screen shows it alone or needs "Home + Lock".
+2. **Tech stack:** CONFIRMED Kotlin + Jetpack Compose.
 3. **Name text:** Show on all layouts, or only some?
 4. **Time format:** 12-hour or 24-hour by default?
 5. **Date line:** Show by default, or off?
