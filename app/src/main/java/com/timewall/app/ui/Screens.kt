@@ -63,7 +63,10 @@ fun LayoutPickerScreen(
         }
         Spacer(Modifier.height(8.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             items(LayoutId.values().toList()) { layout ->
                 val selected = layout == config.layout
                 val previewConfig = config.copy(layout = layout)

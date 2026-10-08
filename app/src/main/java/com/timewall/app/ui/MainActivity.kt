@@ -5,7 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -42,7 +45,12 @@ fun TimeWallApp(vm: ConfigViewModel = viewModel()) {
         destination = Destination.LAYOUTS
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            // Edge-to-edge: keep content clear of status bar and gesture bar.
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
         when (destination) {
             Destination.LAYOUTS -> LayoutPickerScreen(
                 config = config,
