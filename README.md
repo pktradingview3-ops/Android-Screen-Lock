@@ -23,6 +23,14 @@ Option 3: command line (JDK 17, Android SDK 35, Gradle 8.9):
 gradle :app:testDebugUnitTest :app:assembleDebug
 ```
 
+## Automated tests
+
+- Unit tests (JVM): time formatting, config rules.
+- UI flow tests (emulator, Android 11 / API 30): every screen, button, chip, switch and text field, plus the static lock-screen button.
+- Rendering tests (emulator): each layout draws black background with white text.
+
+CI runs all of them on every push to an `arena/**` branch. A run that executes zero instrumented tests is treated as a failure.
+
 ## Install and test
 
 See `docs/PDR.md` section 10 for the device checklist. The first run on vivo Y31 is Phase 0: check whether the live wallpaper shows on the lock screen.
