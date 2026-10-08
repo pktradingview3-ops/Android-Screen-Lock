@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -143,6 +144,26 @@ class AppFlowTest {
         openEditor()
         composeRule.onNodeWithTag("btn_live").fetchSemanticsNode()
         composeRule.onNodeWithTag("btn_static").fetchSemanticsNode()
+    }
+
+    @Test
+    fun editor_staticSnapshotButtonSetsLockImage() {
+        openEditor()
+        composeRule.onNodeWithTag("btn_static").performClick()
+        composeRule.waitUntil(timeoutMillis = 20_000) {
+            composeRule.onAllNodesWithText("Lock screen image set", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithText("Could not set", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText("Could not set", substring = true)
+            .assertCountEquals(0)
+        composeRule.onNodeWithTag("status").assertIsDisplayed()
+    }
+
+    @Test
+    fun home_showsVersionLabel() {
+        composeRule.onNodeWithTag("version_label").assertIsDisplayed()
     }
 
     // ---- helpers

@@ -11,8 +11,9 @@ if [ "$rc" -ne 0 ]; then
   echo "::error::Gradle failed with exit code $rc"
   grep -E "^e: |What went wrong|Could not |Caused by|FAILED" "$LOG" | head -40 \
     | while IFS= read -r line; do echo "::error::${line}"; done
+fi
 
-  python3 - << 'PY'
+python3 - << 'PY'
 import glob
 import xml.etree.ElementTree as ET
 
@@ -32,7 +33,6 @@ for f in files:
             lines = [l.strip() for l in (node.text or "").splitlines() if l.strip()][:4]
             msg = (node.get("message") or "")[:250]
             print(f"::error::TEST FAILED {tc.get('classname')}.{tc.get('name')}: {msg} || " + " | ".join(lines))
-print(f"::notice::Test results: {total} run, {failed} failed")
+print(f"::notice::Test results: {total} run, {failed} failed (from {len(files)} result files)")
 PY
-fi
 exit "$rc"

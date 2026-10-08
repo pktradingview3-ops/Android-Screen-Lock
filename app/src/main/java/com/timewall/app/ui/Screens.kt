@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.timewall.app.BuildConfig
 import com.timewall.app.apply.WallpaperActions
 import com.timewall.app.domain.LayoutId
 import com.timewall.app.domain.Orientation
@@ -99,6 +100,14 @@ fun LayoutPickerScreen(
         ) {
             Text("Edit and set wallpaper")
         }
+        Text(
+            "TimeWall ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("version_label"),
+        )
     }
 }
 
