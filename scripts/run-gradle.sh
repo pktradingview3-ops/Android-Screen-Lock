@@ -26,6 +26,10 @@ for f in files:
     except Exception as exc:  # keep going, report what we can
         print(f"::error::could not parse {f}: {exc}")
         continue
+    suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
+    for su in suites:
+        print(f"::notice::{f.split('/')[-1]} suite={su.get('name')} tests={su.get('tests')} "
+              f"failures={su.get('failures')} errors={su.get('errors')} skipped={su.get('skipped')}")
     for tc in root.iter("testcase"):
         total += 1
         for node in list(tc.findall("failure")) + list(tc.findall("error")):
@@ -34,5 +38,10 @@ for f in files:
             msg = (node.get("message") or "")[:250]
             print(f"::error::TEST FAILED {tc.get('classname')}.{tc.get('name')}: {msg} || " + " | ".join(lines))
 print(f"::notice::Test results: {total} run, {failed} failed (from {len(files)} result files)")
+import os
+for d in ["app/build/outputs", "app/build/reports"]:
+    for root_dir, dirs, names in os.walk(d):
+        if "androidTest" in root_dir or "connected" in root_dir:
+            print(f"::notice::dir {root_dir}: {names[:6]}")
 PY
 exit "$rc"
