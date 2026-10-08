@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -47,8 +48,10 @@ class AppFlowTest {
     @Test
     fun home_showsAllFiveLayouts() {
         composeRule.onNodeWithTag("picker_screen").assertIsDisplayed()
+        // LazyColumn only composes visible rows, so scroll to each one before checking it.
         LayoutId.values().forEach { layout ->
-            composeRule.onNodeWithTag("layout_${layout.name}").fetchSemanticsNode()
+            scrollToLayout(layout)
+            composeRule.onNodeWithTag("layout_${layout.name}").assertIsDisplayed()
         }
     }
 
@@ -59,14 +62,14 @@ class AppFlowTest {
 
     @Test
     fun home_tappingLayoutSelectsIt() {
-        composeRule.onNodeWithTag("layout_L2").performClick()
+        selectLayout(LayoutId.L2)
         composeRule.onNodeWithTag("layout_L2").assertIsSelected()
         composeRule.onNodeWithTag("layout_L1").assertIsNotSelected()
     }
 
     @Test
     fun home_scrollToLastLayoutAndSelectIt() {
-        composeRule.onNodeWithTag("layout_L5").performScrollTo().performClick()
+        selectLayout(LayoutId.L5)
         composeRule.onNodeWithTag("layout_L5").assertIsSelected()
     }
 
@@ -110,7 +113,7 @@ class AppFlowTest {
 
     @Test
     fun editor_dateSwitchDisabledForL2() {
-        composeRule.onNodeWithTag("layout_L2").performClick()
+        selectLayout(LayoutId.L2)
         openEditor()
         composeRule.onNodeWithTag("switch_date").assertIsNotEnabled()
     }
@@ -126,12 +129,12 @@ class AppFlowTest {
     fun editor_nameFieldShowsCounter() {
         openEditor()
         composeRule.onNodeWithTag("name_field").performTextInput("Ayush")
-        composeRule.onNodeWithText("6/20").fetchSemanticsNode()
+        composeRule.onNodeWithText("5/20").fetchSemanticsNode()
     }
 
     @Test
     fun editor_selectionSurvivesGoingBackAndForth() {
-        composeRule.onNodeWithTag("layout_L4").performClick()
+        selectLayout(LayoutId.L4)
         openEditor()
         composeRule.onNodeWithTag("chip_24h").performClick()
         composeRule.onNodeWithTag("btn_back").performClick()
@@ -150,7 +153,7 @@ class AppFlowTest {
     @Test
     fun editor_staticSnapshotButtonSetsLockImage() {
         openEditor()
-        composeRule.onNodeWithTag("btn_static").performClick()
+        composeRule.onNodeWithTag("btn_static").performScrollTo().performClick()
         composeRule.waitUntil(timeoutMillis = 20_000) {
             composeRule.onAllNodes(hasText("Lock screen image set", substring = true))
                 .fetchSemanticsNodes().isNotEmpty() ||
@@ -168,6 +171,15 @@ class AppFlowTest {
     }
 
     // ---- helpers
+
+    private fun scrollToLayout(layout: LayoutId) {
+        composeRule.onNodeWithTag("layout_list").performScrollToIndex(layout.ordinal)
+    }
+
+    private fun selectLayout(layout: LayoutId) {
+        scrollToLayout(layout)
+        composeRule.onNodeWithTag("layout_${layout.name}").performClick()
+    }
 
     private fun openEditor() {
         composeRule.onNodeWithTag("btn_edit").performClick()
