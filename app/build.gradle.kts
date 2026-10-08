@@ -14,6 +14,9 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "0.1.1"
+
+        // JUnit4 tests need the AndroidX runner; the default legacy runner runs 0 tests.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
