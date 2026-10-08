@@ -12,32 +12,33 @@ import com.timewall.app.render.WallpaperRenderer
 import com.timewall.app.wallpaper.TimeWallpaperService
 import java.time.LocalDateTime
 
+/**
+ * Every action returns a Result, so the UI can show a clear message instead of crashing.
+ */
 object WallpaperActions {
 
     /**
      * Opens the system live-wallpaper preview with TimeWall preselected.
-     * The user confirms there. The app never changes the wallpaper silently.
+     * The user confirms there; the app never changes the wallpaper silently.
      */
-    fun openLiveWallpaperPreview(context: Context) {
+    fun openLiveWallpaperPreview(context: Context): Result<Unit> = runCatching {
         val component = ComponentName(context, TimeWallpaperService::class.java)
-        val direct = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).putExtra(
-            WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-            component,
-        )
+        val direct = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+            .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             context.startActivity(direct)
         } catch (e: ActivityNotFoundException) {
-            // Some OEMs do not handle the direct intent. Fall back to the wallpaper chooser.
-            context.startActivity(
-                Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            // Some phones do not handle the direct intent. Fall back to the generic chooser.
+            val chooser = Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser) // throws if there is no picker at all; caller shows a message
         }
     }
 
     /**
      * Static fallback: renders the time NOW and sets it as the lock-screen image only.
-     * The time in this image does not update; it is a snapshot. Call from a background thread.
+     * The time in that image does not update. Must be called off the main thread.
      */
     fun setLockScreenSnapshot(context: Context, config: WallpaperConfig): Result<Unit> = runCatching {
         val wm = WallpaperManager.getInstance(context)

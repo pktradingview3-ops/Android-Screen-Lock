@@ -1,5 +1,6 @@
 package com.timewall.app.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.timewall.app.apply.WallpaperActions
 import com.timewall.app.domain.LayoutId
@@ -44,7 +47,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// ---------------------------------------------------------------- Layout picker
+// ============================================================ Layout picker (home)
 
 @Composable
 fun LayoutPickerScreen(
@@ -53,60 +56,98 @@ fun LayoutPickerScreen(
     onEdit: () -> Unit,
     onHelp: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Choose a layout", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            TextButton(onClick = onHelp) { Text("Help") }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .testTag("picker_screen"),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Choose a layout",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onHelp, modifier = Modifier.testTag("btn_help")) {
+                Text("Help")
+            }
         }
         Spacer(Modifier.height(8.dp))
 
         LazyColumn(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .testTag("layout_list"),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(LayoutId.values().toList()) { layout ->
-                val selected = layout == config.layout
-                val previewConfig = config.copy(layout = layout)
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelect(layout) },
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        WallpaperPreview(
-                            config = previewConfig,
-                            modifier = Modifier.width(110.dp).aspectRatio(9f / 19.5f),
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text(layout.label, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                if (layout.orientation == Orientation.VERTICAL) "Vertical" else "Horizontal",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            if (selected) {
-                                Text("Selected", style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                    }
-                }
+            items(LayoutId.values().toList(), key = { it.name }) { layout ->
+                LayoutCard(
+                    layout = layout,
+                    selected = layout == config.layout,
+                    previewConfig = config.copy(layout = layout),
+                    onClick = { onSelect(layout) },
+                )
             }
         }
 
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onEdit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_edit"),
+        ) {
             Text("Edit and set wallpaper")
         }
     }
 }
 
-// ---------------------------------------------------------------- Editor
+@Composable
+private fun LayoutCard(
+    layout: LayoutId,
+    selected: Boolean,
+    previewConfig: WallpaperConfig,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("layout_${layout.name}")
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
+        colors = if (selected) {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        } else {
+            CardDefaults.cardColors()
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            WallpaperPreview(
+                config = previewConfig,
+                modifier = Modifier
+                    .width(110.dp)
+                    .aspectRatio(9f / 19.5f),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(layout.label, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (layout.orientation == Orientation.VERTICAL) "Vertical" else "Horizontal",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (selected) {
+                    Text("Selected", style = MaterialTheme.typography.labelLarge)
+                } else {
+                    Text("Tap to select", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+// ============================================================ Editor
 
 @Composable
 fun EditorScreen(
@@ -117,15 +158,19 @@ fun EditorScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(16.dp)
+            .testTag("editor_screen"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onBack) { Text("Back") }
+        TextButton(onClick = onBack, modifier = Modifier.testTag("btn_back")) {
+            Text("Back to layouts")
+        }
         Text(config.layout.label, style = MaterialTheme.typography.titleLarge)
 
         WallpaperPreview(
@@ -144,11 +189,13 @@ fun EditorScreen(
                 selected = !config.use24h,
                 onClick = { onChange { it.copy(use24h = false) } },
                 label = { Text("12-hour") },
+                modifier = Modifier.testTag("chip_12h"),
             )
             FilterChip(
                 selected = config.use24h,
                 onClick = { onChange { it.copy(use24h = true) } },
                 label = { Text("24-hour") },
+                modifier = Modifier.testTag("chip_24h"),
             )
         }
 
@@ -166,6 +213,7 @@ fun EditorScreen(
                 checked = config.isDateVisible,
                 enabled = config.layout.supportsDate,
                 onCheckedChange = { checked -> onChange { it.copy(showDate = checked) } },
+                modifier = Modifier.testTag("switch_date"),
             )
         }
 
@@ -179,38 +227,52 @@ fun EditorScreen(
                 Text("${config.name.length}/${WallpaperConfig.MAX_NAME_LENGTH}")
             },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("name_field"),
         )
 
         HorizontalDivider()
 
         Text("Apply", style = MaterialTheme.typography.titleMedium)
         Button(
-            onClick = { WallpaperActions.openLiveWallpaperPreview(context) },
-            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                WallpaperActions.openLiveWallpaperPreview(context)
+                    .onFailure {
+                        status = "This phone has no wallpaper picker. Set it from Settings > Wallpaper."
+                    }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_live"),
         ) {
             Text("Set live wallpaper (recommended)")
         }
         Text(
-            "Time updates every minute. The system preview opens; you confirm there. " +
+            "Time updates every minute. The system preview opens and you confirm there. " +
                 "On some phones the live wallpaper applies to Home and Lock screen together.",
             style = MaterialTheme.typography.bodySmall,
         )
 
         OutlinedButton(
+            enabled = !busy,
             onClick = {
+                busy = true
                 status = "Setting lock screen image..."
                 scope.launch {
                     val result = withContext(Dispatchers.IO) {
                         WallpaperActions.setLockScreenSnapshot(context, config)
                     }
+                    busy = false
                     status = result.fold(
                         onSuccess = { "Lock screen image set. The time in it will NOT update." },
                         onFailure = { "Could not set lock screen image: ${it.message}" },
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_static"),
         ) {
             Text("Set lock screen snapshot (static)")
         }
@@ -219,11 +281,17 @@ fun EditorScreen(
             style = MaterialTheme.typography.bodySmall,
         )
 
-        status?.let { Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Start) }
+        status?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("status"),
+            )
+        }
     }
 }
 
-// ---------------------------------------------------------------- Help
+// ============================================================ Help
 
 @Composable
 fun HelpScreen(onBack: () -> Unit) {
@@ -231,10 +299,13 @@ fun HelpScreen(onBack: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(16.dp)
+            .testTag("help_screen"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onBack) { Text("Back") }
+        TextButton(onClick = onBack, modifier = Modifier.testTag("btn_help_back")) {
+            Text("Back to layouts")
+        }
         Text("Help", style = MaterialTheme.typography.titleLarge)
 
         Text("What this app does", style = MaterialTheme.typography.titleMedium)
@@ -252,7 +323,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Text("How to set the live wallpaper", style = MaterialTheme.typography.titleMedium)
         Text(
-            "1. Open Editor and tap \"Set live wallpaper\".\n" +
+            "1. Open Edit and tap \"Set live wallpaper\".\n" +
                 "2. In the system preview, tap Set wallpaper.\n" +
                 "3. Choose Home and lock screen, or Lock screen only, if your phone offers it.\n" +
                 "4. Lock the phone and check the time.",

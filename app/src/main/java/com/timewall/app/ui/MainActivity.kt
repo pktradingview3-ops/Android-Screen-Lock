@@ -9,17 +9,15 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
 
 class MainActivity : ComponentActivity() {
 
@@ -41,6 +39,7 @@ fun TimeWallApp(vm: ConfigViewModel = viewModel()) {
     val config by vm.config.collectAsState()
     var destination by rememberSaveable { mutableStateOf(Destination.LAYOUTS) }
 
+    // System back goes to the layout list from any sub-screen (instead of closing the app).
     BackHandler(enabled = destination != Destination.LAYOUTS) {
         destination = Destination.LAYOUTS
     }
@@ -48,7 +47,7 @@ fun TimeWallApp(vm: ConfigViewModel = viewModel()) {
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            // Edge-to-edge: keep content clear of status bar and gesture bar.
+            // Edge-to-edge: keep content clear of the status bar and gesture bar.
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         when (destination) {
