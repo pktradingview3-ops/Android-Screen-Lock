@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TimeWall</string>
+    <string name="live_wallpaper_name">TimeWall Clock</string>
+    <string name="wallpaper_description">Black wallpaper with bold time</string>
+</resources>

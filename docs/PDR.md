@@ -1,6 +1,6 @@
 # PDR: Android Wallpaper + Lock-Screen Time Personalization App
 
-Status: Draft v0.1
+Status: v0.2 (Phase 1 code written; build verified in CI, device test pending)
 Owner: Personal project (not for Play Store release in v1)
 Target device for testing: vivo Y31 (2021), Funtouch OS, Android 11/12 based (exact version to be confirmed on device via Settings > About phone)
 
@@ -89,7 +89,8 @@ Layouts are data-driven templates (position, font scale, condense factor, rules)
 ```
 
 Key UX rules:
-- Every apply action ends with the system's own confirmation screen. The app never silently changes the wallpaper.
+- Live wallpaper: the app opens the system preview, and the user confirms there. The app never changes the live wallpaper silently.
+- Static snapshot: `WallpaperManager.setBitmap` applies immediately (no system preview). The UI says so and warns that the time will not update.
 - Preview always shows the real rendering engine output (same code path as the live wallpaper).
 
 ## 7. Architecture
@@ -101,7 +102,7 @@ app/
   render/        Canvas renderer: draws black bg + text using layout template (shared by preview, live wallpaper, static export)
   wallpaper/     WallpaperService subclass (live), tick scheduler (minute-aligned Handler/AlarmManager-free approach)
   apply/         Static export (render to Bitmap -> WallpaperManager.setBitmap(FLAG_LOCK))
-  data/          Settings persistence (Jetpack DataStore). No network, no database in v1.
+  data/          Settings persistence (SharedPreferences). No network, no database in v1.
 ```
 
 Design principles:
@@ -113,7 +114,7 @@ Design principles:
 
 | Permission / capability | Needed? | Why | How handled |
 |---|---|---|---|
-| `SET_WALLPAPER` | Yes (normal, auto-granted) | Set static lock wallpaper | Declared in manifest; no runtime prompt |
+| `SET_WALLPAPER` | Yes (normal, auto-granted) | Set static lock wallpaper and open live wallpaper picker | Declared in manifest; no runtime prompt |
 | `BIND_WALLPAPER` | Yes (system-only, declared on service) | Required for live wallpaper service | Declared on the service; user chooses it in system UI |
 | `INTERNET` | **No** | No network features in v1 | Not declared |
 | Storage / Photos | **No** in v1 | No photo backgrounds in v1 | When added in v2, use Android Photo Picker (no broad storage permission) |
