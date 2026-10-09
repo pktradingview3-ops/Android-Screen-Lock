@@ -45,8 +45,13 @@ class AppLockFlowTest {
     private fun exists(tag: String): Boolean =
         composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
 
+    /** Waits for a test tag. On timeout, the error names the tag so the failing step is clear. */
     private fun waitForTag(tag: String) {
-        composeRule.waitUntil(10_000) { exists(tag) }
+        try {
+            composeRule.waitUntil(10_000) { exists(tag) }
+        } catch (e: Throwable) {
+            throw AssertionError("Timed out waiting for test tag '$tag'", e)
+        }
     }
 
     /** Waits until a node with this tag shows text containing [text]. */
