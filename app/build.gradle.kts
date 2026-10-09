@@ -12,8 +12,8 @@ android {
         applicationId = "com.timewall.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "0.3.0"
 
         // JUnit4 tests need the AndroidX runner; the default legacy runner runs 0 tests.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

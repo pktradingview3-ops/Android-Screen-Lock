@@ -59,6 +59,7 @@ fun LayoutPickerScreen(
     onEdit: () -> Unit,
     onHelp: () -> Unit,
     onAppLock: () -> Unit,
+    onLockApps: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -72,6 +73,9 @@ fun LayoutPickerScreen(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
+            TextButton(onClick = onLockApps, modifier = Modifier.testTag("btn_lock_apps")) {
+                Text("Lock apps")
+            }
             TextButton(onClick = onAppLock, modifier = Modifier.testTag("btn_applock")) {
                 Text("App lock")
             }

@@ -10,13 +10,32 @@ Target device for testing: vivo Y31 (2021), Funtouch OS, Android 11/12 based (ex
 
 Build a simple, transparent Android app that lets the user set a black wallpaper with a large, bold white time display, in several layouts (horizontal and vertical), with optional custom name text. The app must use only supported Android APIs and must not bypass or disable any system security.
 
-## 2. Non-goals (v1)
+## 2. Non-goals
 
 - No replacement or modification of the system lock screen UI, PIN, pattern, or biometrics.
-- No accessibility-service, overlay, device-admin, or root-based hacks to "control" the lock screen.
+- No device-admin or root-based hacks.
 - No lock-screen widgets (not available on the target device/OS level).
 - No Play Store release, ads, analytics, accounts, or network calls.
 - No user-uploaded photo backgrounds in v1 (planned for v2).
+
+### 2.1 Per-app lock (v0.3.0) — scope change
+
+v1 deliberately excluded an accessibility service. v0.3.0 adds one, because the
+owner asked to lock **other apps** on **their own phone** — the same thing
+mainstream app lockers do.
+
+The scope of that permission is kept as small as it can be while still working:
+
+| Aspect | Decision |
+|---|---|
+| Event types | Only `typeWindowStateChanged` — the single event that tells us which app came to the foreground |
+| `canRetrieveWindowContent` | **false** — the service never reads screen content, only the package name that rides along with the event |
+| Input control | None. No `flagRequestFilterKeyEvents`, no gestures |
+| Personal use | Built for the owner's own device; it is not a surveillance tool and does not report anything off-device |
+| Network | Still none. Nothing is uploaded |
+
+This is documented plainly in the README so a user knows exactly what the
+permission is and is not used for.
 
 ## 3. Key Technical Constraint (must read)
 

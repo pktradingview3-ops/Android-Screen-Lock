@@ -3,4 +3,6 @@
     <string name="app_name">TimeWall</string>
     <string name="live_wallpaper_name">TimeWall Clock</string>
     <string name="wallpaper_description">Black wallpaper with bold time</string>
+    <string name="app_lock_service_label">TimeWall app lock</string>
+    <string name="app_lock_service_description">Locks the apps you choose. It only reads which app opened, never what is on the screen.</string>
 </resources>

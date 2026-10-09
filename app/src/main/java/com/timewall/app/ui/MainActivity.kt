@@ -39,7 +39,7 @@ class MainActivity : FragmentActivity() {
     }
 }
 
-private enum class Destination { LAYOUTS, EDITOR, HELP, APP_LOCK }
+private enum class Destination { LAYOUTS, EDITOR, HELP, APP_LOCK, APP_LOCK_PICKER }
 
 @Composable
 fun TimeWallApp(
@@ -82,6 +82,7 @@ fun TimeWallApp(
                     onEdit = { destination = Destination.EDITOR },
                     onHelp = { destination = Destination.HELP },
                     onAppLock = { destination = Destination.APP_LOCK },
+                    onLockApps = { destination = Destination.APP_LOCK_PICKER },
                 )
                 Destination.EDITOR -> EditorScreen(
                     config = config,
@@ -93,6 +94,9 @@ fun TimeWallApp(
                 )
                 Destination.APP_LOCK -> AppLockSettingsScreen(
                     vm = lockVm,
+                    onBack = { destination = Destination.LAYOUTS },
+                )
+                Destination.APP_LOCK_PICKER -> com.timewall.app.applock.AppLockPickerScreen(
                     onBack = { destination = Destination.LAYOUTS },
                 )
             }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Accessibility service config for the per-app locker.
+
+  Deliberately minimal, for stability and battery:
+  - Only TYPE_WINDOW_STATE_CHANGED is requested. That is the single event needed to
+    notice which app came to the foreground. Asking for more (TYPE_WINDOW_CONTENT_CHANGED,
+    TYPE_VIEW_*) causes constant callbacks and battery drain for no benefit.
+  - canRetrieveWindowContent is false: this feature only needs the package name that
+    comes with the event, never the contents of the screen. That keeps the permission
+    as small as it can be while still working.
+  - No flags that would let it control or filter input.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/app_lock_service_description"
+    android:notificationTimeout="0"
+    android:settingsActivity="com.timewall.app.ui.MainActivity" />

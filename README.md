@@ -55,13 +55,38 @@ than guessed.
   (120,000 iterations, 16-byte random salt). Wrong PINs trigger a lockout that
   starts at 30 s and doubles, capped at 15 minutes. `FLAG_SECURE` blocks
   screenshots and Recents previews while the lock is on.
+- **Lock other apps (v0.3.0)** — pick any installed app and it asks for your PIN
+  when it opens. Same PIN, same lockout, same fingerprint as the app lock. An
+  unlocked app stays open for 30 s after you unlock it, so switching away and back
+  does not ask again.
 - **No network** — no accounts, no analytics, no ads, no crash reporting. One
   permission: `SET_WALLPAPER`.
 - **Live preview** in the editor uses the same renderer as the wallpaper, so what
   you see is what gets drawn.
 
-> **Scope of the app lock:** it guards **TimeWall's own screens only**. It is not
-> a phone-wide app locker — see the note under "What it can and cannot do".
+### Locking other apps — what the permission is used for
+
+Per-app locking needs Android's **accessibility service**, the same mechanism every
+app locker uses. Android gives no other way for one app to notice that another app
+was opened. The scope here is deliberately the smallest that still works:
+
+| Setting | Value | Why |
+|---|---|---|
+| Event types | `typeWindowStateChanged` only | The single event that says which app came to the foreground |
+| `canRetrieveWindowContent` | **false** | The service never reads what is on the screen — only the package name that rides along with the event |
+| Input control | none | No key filtering, no gestures |
+| Network | none | Nothing leaves the device. Still no `INTERNET` permission |
+
+Turn it on at **Lock apps → Open accessibility settings → TimeWall app lock**. The
+app shows a red warning card until it is enabled, because nothing locks without it.
+
+If you prefer not to grant it, simply leave it off — the wallpaper and the app's
+own lock work exactly as before.
+
+> **Scope of the app lock:** the PIN-protected lock guards **TimeWall's own
+> screens**. Per-app locking (v0.3.0) extends the same PIN to whichever other apps
+> you pick, via the accessibility service described above. Neither one touches the
+> system lock screen.
 
 ## What it can and cannot do
 
