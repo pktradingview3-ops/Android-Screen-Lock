@@ -70,6 +70,16 @@ Layouts are data-driven templates (position, font scale, condense factor, rules)
 - v1 uses one bundled bold sans font (licence must allow bundling; check before shipping).
 - Font scaling and horizontal condensing are done in code so the same template works on any screen size.
 
+### 5.4 App lock (v0.2.0)
+- Optional PIN (4 to 6 digits) to open TimeWall. Off by default.
+- Locks when the app process starts, and when the app comes back to the foreground after more than 30 seconds in the background. A short trip (e.g. to the system wallpaper picker) does not lock it.
+- Optional fingerprint (BIOMETRIC_STRONG) as a convenience. The PIN always works too.
+- Wrong PIN: 5 consecutive failures start a lockout of 30 s, doubling per further failure, capped at 15 min.
+- PIN stored only as a PBKDF2-HMAC-SHA256 hash (120,000 iterations, 16-byte random salt) in app-private SharedPreferences.
+- While app lock is on, FLAG_SECURE blocks screenshots and recents previews of TimeWall.
+- No in-app PIN reset: resetting without the PIN would be a bypass. Forgotten PIN: Android Settings > Apps > TimeWall > Clear data (this also deletes saved TimeWall settings).
+- App lock does NOT protect the system lock screen or the live wallpaper. It only guards TimeWall's own screens.
+
 ## 6. Screen Flow
 
 ```
@@ -122,6 +132,7 @@ Design principles:
 | Accessibility service | **No** | Not allowed for this purpose | Not used |
 | Overlay (`SYSTEM_ALERT_WINDOW`) | **No** | Not allowed for this purpose | Not used |
 | Device admin | **No** | Not allowed for this purpose | Not used |
+| `USE_BIOMETRIC` | Yes (normal, auto-granted; merged from `androidx.biometric`) | Optional fingerprint unlock for app lock | Only used when the user turns on fingerprint; PIN always works |
 | Battery optimization exemption | **No** (default) | Live wallpaper should not need it | Only ask if device testing proves it is needed, and explain why in-app |
 
 Settings the user must do manually (app shows step-by-step help, never automates them):
@@ -132,12 +143,13 @@ Settings the user must do manually (app shows step-by-step help, never automates
 ## 9. Privacy
 
 - No accounts, no analytics, no crash reporting, no network calls in v1.
-- Only local data: layout choice, time format, date toggle, name text.
+- Only local data: layout choice, time format, date toggle, name text. If app lock is on: a salted PIN hash, lockout counter and the fingerprint toggle (all on the device).
 - The app will include a short privacy note in Settings.
 
 ## 10. Quality and Testing
 
 ### 10.1 Unit tests
+- App lock rules: PIN validation, lockout schedule and cap, PBKDF2 hash/verify, 30-second grace logic (`app/src/test/.../security`).
 - Time formatter: 12h/24h, midnight, noon, leap-year date, timezone change.
 - Layout templates: text fits within 1080x2400 and safe area for every layout (automated bounds check, same logic as `make_mockups.py`).
 - Name text: max length, empty name, emoji/Unicode handling (fallback to plain text if glyph missing).
@@ -149,7 +161,8 @@ Settings the user must do manually (app shows step-by-step help, never automates
 - Behaviour after device reboot.
 - Battery use over 1 hour idle (target: low, no wake locks).
 - Display after rotation, Always-On (if present), and in both light and dark system themes.
-- Not affected by fingerprint / PIN screen.
+- Not affected by fingerprint / PIN screen (the app lock never changes the live wallpaper).
+- App lock checklist: see `docs/device-test.md`, Test E.
 
 ### 10.3 Performance targets
 - Renderer draw time under 16 ms on the Y31.

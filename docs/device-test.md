@@ -2,7 +2,7 @@
 
 Automated checks already passing in CI (Android 11 / API 30 emulator, 22 tests): all screens and buttons work, layouts draw correctly, and the static lock-screen image is set successfully. The checks below are what only a real phone can confirm.
 
-Before testing: confirm the app version at the bottom of the first screen says **0.1.2 (build 3)**. If it says an older version, install the newer APK.
+Before testing: confirm the app version at the bottom of the first screen says **0.2.0 (build 4)**. If it says an older version, install the newer APK.
 
 Goal: decide whether live time shows on the lock screen, and whether a static snapshot works.
 
@@ -31,8 +31,23 @@ Goal: decide whether live time shows on the lock screen, and whether a static sn
 - [ ] After reboot, live wallpaper still works.
 - [ ] Battery > App battery usage for TimeWall: if the time stops updating in background, set to Unrestricted and retest.
 
+## Test E: app lock (v0.2.0)
+Setup: install the new APK over the old one (version 0.2.0). Settings > App lock > Turn on app lock, PIN 4 to 6 digits.
+- [ ] Open TimeWall: PIN screen appears before any layout.
+- [ ] Wrong PIN shows the attempts-left message. Right PIN opens the app.
+- [ ] Five wrong PINs show the countdown (30 s). The correct PIN is refused during the countdown.
+- [ ] Open the app, press Home, wait 10 s, return: no PIN asked.
+- [ ] Press Home, wait more than 30 s, return: PIN asked.
+- [ ] Recents screen: TimeWall preview is blank (FLAG_SECURE). Screenshot is blocked.
+- [ ] Fingerprint: enroll a fingerprint in Settings. In TimeWall, turn on "Fingerprint too". Lock, return, and check the prompt appears and unlocks. Use PIN from the prompt and check that works too.
+- [ ] Turn off app lock: wrong PIN is refused, right PIN turns it off.
+- [ ] Kill TimeWall from recents (or reboot), reopen: PIN asked when lock is on.
+- [ ] Live wallpaper still shows the time while app lock is on (app lock does not touch it).
+- Result: ____
+
 ## Result summary
 - Live on lock screen alone: yes / no
 - Live on Home + Lock: yes / no
 - Static snapshot works: yes / no
+- App lock works on vivo Y31 (PIN / lockout / fingerprint / 30 s grace): yes / no
 - Notes:

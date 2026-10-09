@@ -17,6 +17,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timewall.app.data.ConfigStore
+import com.timewall.app.security.AppLockStore
+import com.timewall.app.security.AppSession
 import com.timewall.app.domain.LayoutId
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +39,9 @@ class AppFlowTest {
         override fun before() {
             val context = ApplicationProvider.getApplicationContext<Context>()
             ConfigStore.prefs(context).edit().clear().commit()
+            // App lock must be off so the layout tests are not blocked by the PIN screen.
+            AppLockStore.from(context).clearAll()
+            AppSession.onProcessStart(false)
         }
     }
 
