@@ -303,7 +303,11 @@ fun AppLockSettingsScreen(vm: AppLockViewModel, onBack: () -> Unit) {
                     ) { Text("Change PIN") }
 
                     OutlinedButton(
-                        onClick = { vm.lockNow() },
+                        onClick = {
+                            vm.lockNow()
+                            // Leave settings so that after unlocking the user lands on the layout list.
+                            onBack()
+                        },
                         modifier = Modifier.fillMaxWidth().testTag("btn_applock_now"),
                     ) { Text("Lock TimeWall now") }
 

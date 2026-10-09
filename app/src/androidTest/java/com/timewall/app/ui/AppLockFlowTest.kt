@@ -16,9 +16,10 @@ import com.timewall.app.security.AppLockStore
 import com.timewall.app.security.AppSession
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 
 /**
@@ -28,17 +29,21 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AppLockFlowTest {
 
-    @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    @Before
-    fun resetState() {
-        ConfigStore.prefs(context).edit().clear().commit()
-        AppLockStore.from(context).clearAll()
-        AppSession.onProcessStart(false)
+    private val composeRule = createAndroidComposeRule<MainActivity>()
+
+    // Reset must run BEFORE the activity launches: the activity's ViewModel reads the store on creation.
+    private val resetState = object : ExternalResource() {
+        override fun before() {
+            ConfigStore.prefs(context).edit().clear().commit()
+            AppLockStore.from(context).clearAll()
+            AppSession.onProcessStart(false)
+        }
     }
+
+    @get:Rule
+    val rules: RuleChain = RuleChain.outerRule(resetState).around(composeRule)
 
     // ---- Helpers
 
