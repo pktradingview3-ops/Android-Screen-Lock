@@ -4,6 +4,36 @@
     <!-- Only permission needed: set the wallpaper (normal permission, granted at install). -->
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
+    <!--
+      Android 11+ package visibility.
+
+      Without this, getInstalledApplications() and queryIntentActivities() only return
+      apps that are already visible to us, so the app picker listed almost nothing but
+      the OEM's own system apps - WhatsApp, Truecaller and other installed apps never
+      appeared.
+
+      These are <queries> declarations, NOT permissions: they grant no access to data,
+      they only make the package list complete so the user can pick from it. Nothing is
+      read from the apps themselves.
+    -->
+    <queries>
+        <!-- Everything with a launcher icon: the apps a user would want to lock. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- The home screen, so it can be detected and refused as unsafe to lock. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+        <!-- Needed to read an app's label and icon for the list. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.INFO" />
+        </intent>
+    </queries>
+
     <application
         android:name=".TimeWallApplication"
         android:allowBackup="false"

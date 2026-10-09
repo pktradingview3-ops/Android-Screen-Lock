@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -33,6 +34,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,18 +69,27 @@ private fun isLauncher(pm: PackageManager, packageName: String): Boolean {
 private fun loadInstalledApps(context: Context): List<InstalledApp> {
     val pm = context.packageManager
     return runCatching {
-        pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            .asSequence()
-            // Only apps the user can actually launch, and never ourselves.
-            .filter { it.packageName != context.packageName }
-            .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
-            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 || isLaunchableSystemApp(pm, it) }
-            .map {
-                InstalledApp(
-                    packageName = it.packageName,
-                    label = pm.getApplicationLabel(it).toString(),
-                    isUnsafeToLock = it.packageName in UNSAFE_TO_LOCK || isLauncher(pm, it.packageName),
-                )
+        // Build the list from launcher activities rather than getInstalledApplications.
+        // On Android 11+ the launcher-intent query is the reliable way to enumerate the
+        // apps a user can actually open, and it is exactly the set worth locking. The
+        // <queries> block in the manifest is what makes this complete.
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val launchers = pm.queryIntentActivities(launcherIntent, 0)
+
+        launchers.asSequence()
+            .mapNotNull { it.activityInfo?.packageName }
+            .distinct()
+            // Never offer our own app.
+            .filter { it != context.packageName }
+            .mapNotNull { packageName ->
+                runCatching {
+                    val info = pm.getApplicationInfo(packageName, 0)
+                    InstalledApp(
+                        packageName = packageName,
+                        label = pm.getApplicationLabel(info).toString(),
+                        isUnsafeToLock = packageName in UNSAFE_TO_LOCK || isLauncher(pm, packageName),
+                    )
+                }.getOrNull()
             }
             .sortedWith(compareBy({ it.isUnsafeToLock }, { it.label.lowercase() }))
             .toList()
@@ -168,6 +179,19 @@ fun AppLockPickerScreen(onBack: () -> Unit) {
                 Text(
                     "Pick the apps to protect. Each one asks for your PIN when it opens.",
                     style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            item {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("app_search"),
+                    label = { Text("Search apps") },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 )
             }
 
