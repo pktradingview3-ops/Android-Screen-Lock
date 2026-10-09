@@ -27,6 +27,14 @@ class AppLockAccessibilityService : AccessibilityService() {
     companion object {
         private const val SYSTEM_UI = "com.android.systemui"
 
+        /**
+         * After the overlay is dismissed (unlock or cancel), do not re-lock the same
+         * package for this long. Without it, dismissing the overlay puts the protected
+         * app back in the foreground and the service immediately re-locks it, which
+         * looks like the screen is stuck and cannot be dismissed.
+         */
+        private const val RELOCK_COOLDOWN_MS = 1_200L
+
         /** Set by the overlay while it is visible, so we do not relaunch ourselves. */
         @Volatile
         var overlayShowing: Boolean = false
@@ -34,6 +42,18 @@ class AppLockAccessibilityService : AccessibilityService() {
         /** The package currently behind the overlay, if any. */
         @Volatile
         var overlayPackage: String? = null
+
+        /** Last time we stopped showing an overlay, per package. */
+        private val lastDismissedAt = mutableMapOf<String, Long>()
+
+        fun noteDismissed(packageName: String, nowMs: Long = System.currentTimeMillis()) {
+            synchronized(lastDismissedAt) { lastDismissedAt[packageName] = nowMs }
+        }
+
+        private fun inCooldown(packageName: String, nowMs: Long): Boolean {
+            val at = synchronized(lastDismissedAt) { lastDismissedAt[packageName] } ?: return false
+            return nowMs - at < RELOCK_COOLDOWN_MS
+        }
 
         /** True when the user has the service enabled in system settings. */
         @Volatile
@@ -63,7 +83,14 @@ class AppLockAccessibilityService : AccessibilityService() {
         // System UI (dialogs, recents, the lock screen) must stay usable.
         if (packageName == SYSTEM_UI) return
 
+        // Safety net for a package that got protected before the picker refused it:
+        // locking the launcher or Settings can lock the user out of their own phone.
+        if (packageName in UNSAFE_TO_LOCK) return
+
         if (!targets.needsUnlock(packageName)) return
+
+        // Do not immediately re-lock an app whose overlay the user just dismissed.
+        if (inCooldown(packageName, System.currentTimeMillis())) return
 
         showUnlockOverlay(packageName)
     }

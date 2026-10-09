@@ -54,7 +54,15 @@ import androidx.compose.ui.unit.dp
 data class InstalledApp(
     val packageName: String,
     val label: String,
+    /** True for apps that must never be locked, because locking them breaks the phone. */
+    val isUnsafeToLock: Boolean = false,
 )
+
+/** Launcher packages are found by category too, so OEM renames are still caught. */
+private fun isLauncher(pm: PackageManager, packageName: String): Boolean {
+    val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+    return pm.queryIntentActivities(intent, 0).any { it.activityInfo?.packageName == packageName }
+}
 
 private fun loadInstalledApps(context: Context): List<InstalledApp> {
     val pm = context.packageManager
@@ -65,8 +73,14 @@ private fun loadInstalledApps(context: Context): List<InstalledApp> {
             .filter { it.packageName != context.packageName }
             .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
             .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 || isLaunchableSystemApp(pm, it) }
-            .map { InstalledApp(it.packageName, pm.getApplicationLabel(it).toString()) }
-            .sortedBy { it.label.lowercase() }
+            .map {
+                InstalledApp(
+                    packageName = it.packageName,
+                    label = pm.getApplicationLabel(it).toString(),
+                    isUnsafeToLock = it.packageName in UNSAFE_TO_LOCK || isLauncher(pm, it.packageName),
+                )
+            }
+            .sortedWith(compareBy({ it.isUnsafeToLock }, { it.label.lowercase() }))
             .toList()
     }.getOrDefault(emptyList())
 }
@@ -159,19 +173,23 @@ fun AppLockPickerScreen(onBack: () -> Unit) {
 
             items(visible, key = { it.packageName }) { app ->
                 val checked = app.packageName in protected
+                val unsafe = app.isUnsafeToLock
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("app_row_${app.packageName}"),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (checked) MaterialTheme.colorScheme.secondaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant,
+                        containerColor = when {
+                            unsafe -> MaterialTheme.colorScheme.surfaceVariant
+                            checked -> MaterialTheme.colorScheme.secondaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        },
                     ),
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
+                            .clickable(enabled = !unsafe) {
                                 if (checked) {
                                     store.unprotect(app.packageName)
                                     protected = store.protectedPackages
@@ -185,10 +203,17 @@ fun AppLockPickerScreen(onBack: () -> Unit) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(app.label, fontWeight = FontWeight.SemiBold)
-                            Text(app.packageName, style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                if (unsafe) "Cannot be locked — needed to unlock the phone or fix the app"
+                                else app.packageName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (unsafe) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         Switch(
-                            checked = checked,
+                            checked = checked && !unsafe,
+                            enabled = !unsafe,
                             onCheckedChange = { on ->
                                 if (on) store.protect(app.packageName) else store.unprotect(app.packageName)
                                 protected = store.protectedPackages

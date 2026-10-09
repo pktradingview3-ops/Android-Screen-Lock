@@ -56,12 +56,16 @@ class AppUnlockActivity : FragmentActivity() {
         const val EXTRA_TARGET_PACKAGE = "target_package"
     }
 
+    /** The protected package this overlay belongs to. */
+    private var currentTarget: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
 
         val targetPackage = intent.getStringExtra(EXTRA_TARGET_PACKAGE).orEmpty()
+        currentTarget = targetPackage
         val label = appLabel(targetPackage)
 
         AppLockAccessibilityService.overlayShowing = true
@@ -94,9 +98,22 @@ class AppUnlockActivity : FragmentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        // singleInstance + noHistory: a second lock request arrives here, not in onCreate.
+        // Re-arming the target keeps the overlay pointed at the right app.
+        setIntent(intent)
+        intent.getStringExtra(EXTRA_TARGET_PACKAGE)?.let { currentTarget = it }
+        AppLockAccessibilityService.overlayShowing = true
+        AppLockAccessibilityService.overlayPackage = currentTarget
+    }
+
     private fun clearOverlayFlags() {
         AppLockAccessibilityService.overlayShowing = false
         AppLockAccessibilityService.overlayPackage = null
+        // Tell the service not to immediately re-lock this package; otherwise dismissing
+        // the overlay just brings the protected app forward and it locks again at once.
+        currentTarget?.let { AppLockAccessibilityService.noteDismissed(it) }
     }
 
     override fun onDestroy() {
