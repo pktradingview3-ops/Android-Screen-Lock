@@ -10,23 +10,37 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.timewall.app.BuildConfig
 import com.timewall.app.apply.WallpaperActions
@@ -52,6 +68,15 @@ import kotlinx.coroutines.withContext
 
 // ============================================================ Layout picker (home)
 
+/**
+ * Home screen.
+ *
+ * The old header put the title and three text buttons in a single Row, which
+ * overflowed on a narrow phone: the buttons were squeezed and the title wrapped
+ * badly. The title now sits in a proper app bar and the actions live in their own
+ * row of equal-width cards below it, so nothing competes for width.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LayoutPickerScreen(
     config: WallpaperConfig,
@@ -60,64 +85,154 @@ fun LayoutPickerScreen(
     onHelp: () -> Unit,
     onAppLock: () -> Unit,
     onLockApps: () -> Unit,
+    appLockOn: Boolean = false,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .testTag("picker_screen"),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "Choose a layout",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f),
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("TimeWall", fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "Choose a layout",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onHelp, modifier = Modifier.testTag("btn_help")) {
+                        Icon(Icons.Rounded.Info, contentDescription = "Help")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
-            TextButton(onClick = onLockApps, modifier = Modifier.testTag("btn_lock_apps")) {
-                Text("Lock apps")
-            }
-            TextButton(onClick = onAppLock, modifier = Modifier.testTag("btn_applock")) {
-                Text("App lock")
-            }
-            TextButton(onClick = onHelp, modifier = Modifier.testTag("btn_help")) {
-                Text("Help")
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-
-        LazyColumn(
+        },
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .testTag("layout_list"),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .fillMaxSize()
+                .padding(padding)
+                .testTag("picker_screen"),
         ) {
-            items(LayoutId.values().toList(), key = { it.name }) { layout ->
-                LayoutCard(
-                    layout = layout,
-                    selected = layout == config.layout,
-                    previewConfig = config.copy(layout = layout),
-                    onClick = { onSelect(layout) },
+            // Quick actions: two equal cards, so they fit any width.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                QuickActionCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("btn_lock_apps"),
+                    icon = { Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    title = "Locked apps",
+                    subtitle = "Protect other apps",
+                    onClick = onLockApps,
+                )
+                QuickActionCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("btn_applock"),
+                    icon = { Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    title = "TimeWall lock",
+                    subtitle = if (appLockOn) "On" else "Off",
+                    highlighted = appLockOn,
+                    onClick = onAppLock,
+                )
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("layout_list"),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 16.dp, end = 16.dp, bottom = 12.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(LayoutId.values().toList(), key = { it.name }) { layout ->
+                    LayoutCard(
+                        layout = layout,
+                        selected = layout == config.layout,
+                        previewConfig = config.copy(layout = layout),
+                        onClick = { onSelect(layout) },
+                    )
+                }
+            }
+
+            // Bottom bar: the primary action plus the version line.
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Button(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .testTag("btn_edit"),
+                ) {
+                    Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(19.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text("Edit and set wallpaper")
+                }
+                Text(
+                    "TimeWall ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 10.dp)
+                        .testTag("version_label"),
                 )
             }
         }
+    }
+}
 
-        Spacer(Modifier.height(12.dp))
-        Button(
-            onClick = onEdit,
+@Composable
+private fun QuickActionCard(
+    modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+    highlighted: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("btn_edit"),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Edit and set wallpaper")
+            icon()
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        Text(
-            "TimeWall ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .testTag("version_label"),
-        )
     }
 }
 
@@ -136,7 +251,7 @@ private fun LayoutCard(
         colors = if (selected) {
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         } else {
-            CardDefaults.cardColors()
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         },
     ) {
         Row(
@@ -147,19 +262,38 @@ private fun LayoutCard(
             WallpaperPreview(
                 config = previewConfig,
                 modifier = Modifier
-                    .width(110.dp)
+                    .width(96.dp)
                     .aspectRatio(9f / 19.5f),
             )
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(layout.label, style = MaterialTheme.typography.titleMedium)
                 Text(
                     if (layout.orientation == Orientation.VERTICAL) "Vertical" else "Horizontal",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (selected) {
-                    Text("Selected", style = MaterialTheme.typography.labelLarge)
-                } else {
-                    Text("Tap to select", style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (selected) {
+                        Icon(
+                            Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Selected",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    } else {
+                        Text(
+                            "Tap to select",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -168,6 +302,7 @@ private fun LayoutCard(
 
 // ============================================================ Editor
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     config: WallpaperConfig,
@@ -179,222 +314,306 @@ fun EditorScreen(
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-            .testTag("editor_screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        TextButton(onClick = onBack, modifier = Modifier.testTag("btn_back")) {
-            Text("Back to layouts")
-        }
-        Text(config.layout.label, style = MaterialTheme.typography.titleLarge)
-
-        WallpaperPreview(
-            config = config,
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text(config.layout.label, fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("btn_back")) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .aspectRatio(9f / 19.5f)
-                .align(Alignment.CenterHorizontally),
-        )
-
-        HorizontalDivider()
-
-        Text("Time format", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = !config.use24h,
-                onClick = { onChange { it.copy(use24h = false) } },
-                label = { Text("12-hour") },
-                modifier = Modifier.testTag("chip_12h"),
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .testTag("editor_screen"),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            WallpaperPreview(
+                config = config,
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .aspectRatio(9f / 19.5f)
+                    .align(Alignment.CenterHorizontally),
             )
-            FilterChip(
-                selected = config.use24h,
-                onClick = { onChange { it.copy(use24h = true) } },
-                label = { Text("24-hour") },
-                modifier = Modifier.testTag("chip_24h"),
-            )
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f)) {
-                Text("Show date", style = MaterialTheme.typography.titleMedium)
-                if (!config.layout.supportsDate) {
+            SectionCard(title = "Clock") {
+                Text("Time format", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = !config.use24h,
+                        onClick = { onChange { it.copy(use24h = false) } },
+                        label = { Text("12-hour") },
+                        modifier = Modifier.testTag("chip_12h"),
+                    )
+                    FilterChip(
+                        selected = config.use24h,
+                        onClick = { onChange { it.copy(use24h = true) } },
+                        label = { Text("24-hour") },
+                        modifier = Modifier.testTag("chip_24h"),
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Show date", style = MaterialTheme.typography.titleSmall)
+                        if (!config.layout.supportsDate) {
+                            Text(
+                                "This layout has no date line.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = config.isDateVisible,
+                        enabled = config.layout.supportsDate,
+                        onCheckedChange = { checked -> onChange { it.copy(showDate = checked) } },
+                        modifier = Modifier.testTag("switch_date"),
+                    )
+                }
+
+                OutlinedTextField(
+                    value = config.name,
+                    onValueChange = { value ->
+                        onChange { it.copy(name = value.take(WallpaperConfig.MAX_NAME_LENGTH)) }
+                    },
+                    label = { Text("Name or text (optional)") },
+                    supportingText = { Text("${config.name.length}/${WallpaperConfig.MAX_NAME_LENGTH}") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("name_field"),
+                )
+            }
+
+            SectionCard(title = "Where to show TimeWall") {
+                Button(
+                    onClick = {
+                        WallpaperActions.openLiveWallpaperPreview(context)
+                            .onFailure {
+                                status = "This phone has no wallpaper picker. Set it from Settings > Wallpaper."
+                            }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_live"),
+                ) {
+                    Text("Home and lock screen (live time)")
+                }
+                Text(
+                    "Recommended. The time updates every minute. The system preview opens and you confirm there.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                OutlinedButton(
+                    enabled = !busy,
+                    onClick = {
+                        busy = true
+                        status = "Setting lock screen image..."
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                WallpaperActions.setLockScreenSnapshot(context, config)
+                            }
+                            busy = false
+                            status = result.fold(
+                                onSuccess = {
+                                    val at = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                                    "Lock screen image set at $at. Its time does not update. Tap again to refresh it."
+                                },
+                                onFailure = { "Could not set lock screen image: ${it.message}" },
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_static"),
+                ) {
+                    Text("Lock screen only (still image)")
+                }
+                Text(
+                    "Use this to show TimeWall only on the lock screen. Android cannot keep a live clock on " +
+                        "the lock screen alone, so this image shows the time from when you tap. The home " +
+                        "screen stays as it was.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            SectionCard(title = "The phone's own clock") {
+                Text(
+                    "vivo can show its own clock on the lock screen too. TimeWall cannot hide it, because " +
+                        "that is a phone setting. Open the lock screen settings below and change or turn off " +
+                        "the clock there, then check the lock screen again.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = {
+                        WallpaperActions.openLockScreenSettings(context)
+                            .onFailure {
+                                status = "Could not open settings. Open Settings > Lock screen, home screen and wallpaper."
+                            }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_lock_settings"),
+                ) {
+                    Text("Open lock screen settings")
+                }
+            }
+
+            status?.let {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text(
-                        "This layout has no date line.",
-                        style = MaterialTheme.typography.bodySmall,
+                        it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .padding(14.dp)
+                            .testTag("status"),
                     )
                 }
             }
-            Switch(
-                checked = config.isDateVisible,
-                enabled = config.layout.supportsDate,
-                onCheckedChange = { checked -> onChange { it.copy(showDate = checked) } },
-                modifier = Modifier.testTag("switch_date"),
-            )
+
+            Spacer(Modifier.height(8.dp))
         }
+    }
+}
 
-        OutlinedTextField(
-            value = config.name,
-            onValueChange = { value ->
-                onChange { it.copy(name = value.take(WallpaperConfig.MAX_NAME_LENGTH)) }
-            },
-            label = { Text("Name or text (optional)") },
-            supportingText = {
-                Text("${config.name.length}/${WallpaperConfig.MAX_NAME_LENGTH}")
-            },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("name_field"),
-        )
-
-        HorizontalDivider()
-
-        Text("Where to show TimeWall", style = MaterialTheme.typography.titleMedium)
-
-        Button(
-            onClick = {
-                WallpaperActions.openLiveWallpaperPreview(context)
-                    .onFailure {
-                        status = "This phone has no wallpaper picker. Set it from Settings > Wallpaper."
-                    }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("btn_live"),
+@Composable
+private fun SectionCard(title: String, content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Home and lock screen (live time)")
-        }
-        Text(
-            "Recommended. The time updates every minute. The system preview opens and you confirm there.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-
-        OutlinedButton(
-            enabled = !busy,
-            onClick = {
-                busy = true
-                status = "Setting lock screen image..."
-                scope.launch {
-                    val result = withContext(Dispatchers.IO) {
-                        WallpaperActions.setLockScreenSnapshot(context, config)
-                    }
-                    busy = false
-                    status = result.fold(
-                        onSuccess = {
-                            val at = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
-                            "Lock screen image set at $at. Its time does not update. Tap again to refresh it."
-                        },
-                        onFailure = { "Could not set lock screen image: ${it.message}" },
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("btn_static"),
-        ) {
-            Text("Lock screen only (still image)")
-        }
-        Text(
-            "Use this to show TimeWall only on the lock screen. Android cannot keep a live clock on " +
-                "the lock screen alone, so this image shows the time from when you tap. The home " +
-                "screen stays as it was.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-
-        HorizontalDivider()
-
-        Text("The phone's own clock", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "vivo can show its own clock on the lock screen too. TimeWall cannot hide it, because " +
-                "that is a phone setting. Open the lock screen settings below and change or turn off " +
-                "the clock there, then check the lock screen again.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-        OutlinedButton(
-            onClick = {
-                WallpaperActions.openLockScreenSettings(context)
-                    .onFailure {
-                        status = "Could not open settings. Open Settings > Lock screen, home screen and wallpaper."
-                    }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("btn_lock_settings"),
-        ) {
-            Text("Open lock screen settings")
-        }
-
-        status?.let {
             Text(
-                it,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag("status"),
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            content()
         }
     }
 }
 
 // ============================================================ Help
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpScreen(onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-            .testTag("help_screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        TextButton(onClick = onBack, modifier = Modifier.testTag("btn_help_back")) {
-            Text("Back to layouts")
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Help", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("btn_help_back")) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .testTag("help_screen"),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            HelpBlock(
+                "What this app does",
+                "TimeWall draws a black wallpaper with a large bold time, in several layouts. " +
+                    "It uses Android's official wallpaper system only.",
+            )
+            HelpBlock(
+                "What this app does NOT do",
+                "It does not replace or change your lock screen PIN, pattern, or fingerprint. " +
+                    "It does not connect to the internet and does not collect data. " +
+                    "It does not read what is on your screen.",
+            )
+            HelpBlock(
+                "Locking your other apps",
+                "Open Locked apps, turn it on, then pick the apps to protect. Each one asks for your " +
+                    "PIN when it opens. This needs the accessibility permission, and nothing locks " +
+                    "without it.\n\n" +
+                    "The home screen, Settings and the installers can never be locked: doing so would " +
+                    "lock you out of your own phone.",
+            )
+            HelpBlock(
+                "How to set the live wallpaper",
+                "1. Open Edit and tap \"Home and lock screen (live time)\".\n" +
+                    "2. In the system preview, tap Set wallpaper.\n" +
+                    "3. Choose Home and lock screen, or Lock screen only, if your phone offers it.\n" +
+                    "4. Lock the phone and check the time.",
+            )
+            HelpBlock(
+                "If the time does not show on the lock screen",
+                "Some phones, including some vivo Funtouch OS versions, apply live wallpapers to " +
+                    "Home and Lock together. Choose that option. If the phone stops the app in the " +
+                    "background, set Battery > App battery usage to Unrestricted for TimeWall.",
+            )
+            HelpBlock(
+                "Two clocks on the lock screen?",
+                "Your vivo can show its own clock on the lock screen. TimeWall cannot turn it off, " +
+                    "because it is a phone setting. Use Edit > Open lock screen settings, and change " +
+                    "the clock style or turn it off if your phone allows it.",
+            )
+            HelpBlock(
+                "Lock screen only",
+                "Android does not allow a live clock on the lock screen alone on most phones. " +
+                    "\"Lock screen only\" sets a still image with the time from when you tap. " +
+                    "Tap it again to update the time.",
+            )
+            HelpBlock(
+                "Forgot your PIN?",
+                "There is no in-app reset, on purpose, because a reset would also be a way past the " +
+                    "lock. Open Android Settings > Apps > TimeWall > Clear data. This removes your " +
+                    "saved TimeWall settings too.",
+            )
         }
-        Text("Help", style = MaterialTheme.typography.titleLarge)
+    }
+}
 
-        Text("What this app does", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "TimeWall draws a black wallpaper with a large bold time, in several layouts. " +
-                "It uses Android's official wallpaper system only.",
-        )
-
-        Text("What this app does NOT do", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "It does not replace or change your lock screen PIN, pattern, or fingerprint. " +
-                "It does not use accessibility, overlay, or device-admin permissions. " +
-                "It does not connect to the internet and does not collect data.",
-        )
-
-        Text("How to set the live wallpaper", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "1. Open Edit and tap \"Set live wallpaper\".\n" +
-                "2. In the system preview, tap Set wallpaper.\n" +
-                "3. Choose Home and lock screen, or Lock screen only, if your phone offers it.\n" +
-                "4. Lock the phone and check the time.",
-        )
-
-        Text("If the time does not show on the lock screen", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "Some phones, including some vivo Funtouch OS versions, apply live wallpapers to " +
-                "Home and Lock together. Choose that option. If the phone stops the app in the " +
-                "background, set Battery > App battery usage to Unrestricted for TimeWall.",
-        )
-
-        Text("Two clocks on the lock screen?", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "Your vivo can show its own clock on the lock screen. TimeWall cannot turn it off, " +
-                "because it is a phone setting. Use Edit > Open lock screen settings, and change " +
-                "the clock style or turn it off if your phone allows it.",
-        )
-
-        Text("Lock screen only", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "Android does not allow a live clock on the lock screen alone on most phones. " +
-                "\"Lock screen only\" sets a still image with the time from when you tap. " +
-                "Tap it again to update the time.",
-        )
+@Composable
+private fun HelpBlock(title: String, body: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

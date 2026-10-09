@@ -83,6 +83,7 @@ fun TimeWallApp(
                     onHelp = { destination = Destination.HELP },
                     onAppLock = { destination = Destination.APP_LOCK },
                     onLockApps = { destination = Destination.APP_LOCK_PICKER },
+                    appLockOn = lockEnabled,
                 )
                 Destination.EDITOR -> EditorScreen(
                     config = config,
