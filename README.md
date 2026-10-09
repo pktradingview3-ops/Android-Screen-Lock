@@ -80,6 +80,14 @@ was opened. The scope here is deliberately the smallest that still works:
 Turn it on at **Lock apps → Open accessibility settings → TimeWall app lock**. The
 app shows a red warning card until it is enabled, because nothing locks without it.
 
+**Some apps cannot be locked, on purpose.** The home screen, Settings, System UI,
+the Play Store and the package installers are refused (greyed out in the list, with
+the reason shown). Locking the home screen would make every press of Home demand a
+PIN, and locking Settings would remove the only place this service can be turned off
+again — either one locks you out of your own phone. The accessibility service
+ignores these packages too, so a package protected by an older build is not locked
+either.
+
 If you prefer not to grant it, simply leave it off — the wallpaper and the app's
 own lock work exactly as before.
 
