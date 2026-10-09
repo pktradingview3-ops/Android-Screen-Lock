@@ -1,15 +1,43 @@
-# TimeWall — Android Clock Wallpaper & Live Wallpaper
+# TimeWall — Vivo Clock Wallpaper & Live Wallpaper
 
-A black wallpaper with a large, bold clock for Android. **Five clock layouts**
-(vertical and horizontal), 12/24-hour format, an optional date line, and optional
-custom name text. Built with Kotlin and Jetpack Compose as a proper
-`WallpaperService` live wallpaper, with a static lock-screen snapshot as a
+**Built for Vivo phones.** A black wallpaper with a large, bold clock for Android.
+**Five clock layouts** (vertical and horizontal), 12/24-hour format, an optional
+date line, and optional custom name text. Built with Kotlin and Jetpack Compose as
+a proper `WallpaperService` live wallpaper, with a static lock-screen snapshot as a
 fallback. Optional **app lock** with PIN and fingerprint.
 
 It is a clock wallpaper and a live wallpaper — nothing more. It uses only
 Android's official wallpaper APIs. It does **not** replace or control the system
 lock screen, and it needs no accessibility service, no overlay, no device-admin
 permission and no root.
+
+## Built and tested on Vivo
+
+This app is developed against a real **Vivo Y31 5G (model V2521, Android 15,
+Funtouch OS)** — not just an emulator. Every release is built, installed and
+tested on that device, and the device-specific behaviour is documented rather
+than guessed.
+
+| Item | Value |
+|---|---|
+| Primary test device | **Vivo Y31 5G (V2521)**, Android 15, Funtouch OS |
+| Also validated on | Android 11 / API 30 emulator (CI) |
+| Install method | `adb install -r -t` — upgrades in place, no uninstall |
+| minSdk | 26 (Android 8.0), so it runs on older Vivo models too |
+
+### Vivo / Funtouch OS notes
+
+- **Wallpaper picker.** The app opens the **system** live-wallpaper preview; on
+  Funtouch OS the menu names differ between versions, so the app shows
+  step-by-step help instead of trying to automate it.
+- **Lock screen.** Funtouch does not run a live wallpaper on the lock screen by
+  itself, which is exactly why the app also offers the static snapshot mode. See
+  "What it can and cannot do" below.
+- **Battery.** If Funtouch kills the wallpaper service in the background, set
+  TimeWall's battery usage to **Unrestricted**. The PDR lists this as a known
+  device risk.
+- **Lock pattern.** The app-lock PIN is separate from the phone's own lock
+  pattern and never touches it.
 
 ## Features
 
@@ -31,6 +59,9 @@ permission and no root.
   permission: `SET_WALLPAPER`.
 - **Live preview** in the editor uses the same renderer as the wallpaper, so what
   you see is what gets drawn.
+
+> **Scope of the app lock:** it guards **TimeWall's own screens only**. It is not
+> a phone-wide app locker — see the note under "What it can and cannot do".
 
 ## What it can and cannot do
 
