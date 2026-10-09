@@ -75,6 +75,22 @@ adb install -r -t app/build/outputs/apk/debug/app-debug.apk
 
 The APK is debug-signed, so `-t` is required.
 
+### Why the debug keystore is committed
+
+`debug.keystore` (standard alias `androiddebugkey`, password `android`) is checked
+in on purpose, and `app/build.gradle.kts` points the debug signing config at it.
+
+Without a shared debug key, **every machine and every CI run generates its own**,
+so an APK built on one machine cannot update an app installed from another — the
+install fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, and the only way forward
+is an uninstall, which wipes the user's settings.
+
+With it committed, any build from any machine signs with the same key and
+`adb install -r` upgrades in place.
+
+This is a **debug** key. It is not a secret, and it must never sign a release
+build.
+
 ## Testing
 
 - **31 unit tests (JVM)** — time formatting, config rules, PIN policy, PIN

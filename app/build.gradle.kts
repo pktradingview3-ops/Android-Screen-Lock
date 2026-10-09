@@ -19,7 +19,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // A committed debug keystore, so every build (CI, Android Studio, any machine)
+    // is signed with the SAME key. Without it, each machine/build generates its own
+    // debug key and `adb install -r` fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE,
+    // forcing an uninstall that wipes settings.
+    //
+    // This is a DEBUG key only (standard alias/password "android") and must never
+    // be used for a release build.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
         }
