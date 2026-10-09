@@ -68,16 +68,18 @@ class AppUnlockActivity : FragmentActivity() {
         currentTarget = targetPackage
         val label = appLabel(targetPackage)
 
-        AppLockAccessibilityService.overlayShowing = true
-        AppLockAccessibilityService.overlayPackage = targetPackage
+        AppLockAccessibilityService.markOverlayShown(targetPackage)
 
         setContent {
             TimeWallTheme {
                 UnlockScreen(
                     appLabel = label,
                     onUnlocked = {
+                        // A real unlock: record it so the app is not locked again inside the
+                        // grace window. Deliberately NOT noteDismissed() - that would put the
+                        // app into the suppression window and swallow the next lock.
                         AppLockTargetStore.from(this).markUnlocked(targetPackage)
-                        clearOverlayFlags()
+                        AppLockAccessibilityService.markOverlayHidden()
                         packageManager.getLaunchIntentForPackage(targetPackage)?.let { back ->
                             back.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             runCatching { startActivity(back) }
@@ -85,7 +87,12 @@ class AppUnlockActivity : FragmentActivity() {
                         finish()
                     },
                     onCancelled = {
-                        clearOverlayFlags()
+                        // Cancelling means the user did not unlock. Send them home and let the
+                        // service suppress this package briefly, so the trip back does not
+                        // immediately re-open the overlay. The service re-checks afterwards, so
+                        // the app cannot stay open for free.
+                        AppLockAccessibilityService.markOverlayHidden()
+                        AppLockAccessibilityService.noteDismissed(targetPackage)
                         val home = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
                             addCategory(android.content.Intent.CATEGORY_HOME)
                             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -104,20 +111,14 @@ class AppUnlockActivity : FragmentActivity() {
         // Re-arming the target keeps the overlay pointed at the right app.
         setIntent(intent)
         intent.getStringExtra(EXTRA_TARGET_PACKAGE)?.let { currentTarget = it }
-        AppLockAccessibilityService.overlayShowing = true
-        AppLockAccessibilityService.overlayPackage = currentTarget
-    }
-
-    private fun clearOverlayFlags() {
-        AppLockAccessibilityService.overlayShowing = false
-        AppLockAccessibilityService.overlayPackage = null
-        // Tell the service not to immediately re-lock this package; otherwise dismissing
-        // the overlay just brings the protected app forward and it locks again at once.
-        currentTarget?.let { AppLockAccessibilityService.noteDismissed(it) }
+        currentTarget?.let { AppLockAccessibilityService.markOverlayShown(it) }
     }
 
     override fun onDestroy() {
-        clearOverlayFlags()
+        // Covers every path that is not an explicit unlock or cancel: a swipe away, the
+        // activity being killed, a configuration change. Without this, a dead overlay
+        // would leave overlayShowing true and no app would lock at all.
+        AppLockAccessibilityService.markOverlayHidden()
         super.onDestroy()
     }
 

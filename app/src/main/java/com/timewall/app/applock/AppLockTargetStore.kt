@@ -18,7 +18,7 @@ class AppLockTargetStore private constructor(context: Context) {
         private const val KEY_ENABLED = "enabled"
 
         /** How long an app stays unlocked after a successful unlock. */
-        const val GRACE_MS = 30_000L
+        const val GRACE_MS = LockDecision.GRACE_MS
 
         fun from(context: Context): AppLockTargetStore = AppLockTargetStore(context)
     }
@@ -59,12 +59,27 @@ class AppLockTargetStore private constructor(context: Context) {
         prefs.edit().remove("$KEY_UNLOCKED_AT:$packageName").commit()
     }
 
+    /**
+     * Forget every unlock grace window.
+     *
+     * Called when the screen turns off. Without this, unlocking an app and then locking
+     * the phone would leave that app unlocked for the rest of the grace window, so
+     * picking the phone up again could open it with no PIN.
+     */
+    fun clearAllUnlocked() {
+        val edit = prefs.edit()
+        prefs.all.keys.filter { it.startsWith("$KEY_UNLOCKED_AT:") }.forEach(edit::remove)
+        edit.commit()
+    }
+
     /** True when the app is protected AND not inside its unlock grace window. */
     fun needsUnlock(packageName: String, nowMs: Long = System.currentTimeMillis()): Boolean {
-        if (!enabled) return false
-        if (!isProtected(packageName)) return false
         val unlockedAt = prefs.getLong("$KEY_UNLOCKED_AT:$packageName", 0L)
-        if (unlockedAt <= 0L) return true
-        return nowMs - unlockedAt > GRACE_MS
+        return LockDecision.needsUnlock(
+            enabled = enabled,
+            isProtected = isProtected(packageName),
+            unlockedAtMs = unlockedAt,
+            nowMs = nowMs,
+        )
     }
 }
