@@ -5,8 +5,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.and
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -54,7 +52,7 @@ class AppLockFlowTest {
     /** Waits until a node with this tag shows text containing [text]. */
     private fun waitForTagText(tag: String, text: String) {
         composeRule.waitUntil(10_000) {
-            composeRule.onAllNodes(hasTestTag(tag) and hasText(text, substring = true))
+            composeRule.onAllNodes(hasTestTag(tag).and(hasText(text, substring = true)))
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }
