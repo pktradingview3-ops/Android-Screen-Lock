@@ -75,7 +75,7 @@ class AppLockFlowTest {
 
     /** Turns app lock on through the settings screen, then returns to the layout list. */
     private fun enableLockWithPinViaUi(pin: String) {
-        tap("btn_applock")
+        composeRule.onNodeWithTag("btn_applock").performClick()
         waitForTag("btn_applock_on")
         tap("btn_applock_on")
         typePin("setpin_", pin)
@@ -136,7 +136,7 @@ class AppLockFlowTest {
         tap("btn_applock_back")
         waitForTag("picker_screen")
 
-        tap("btn_applock")
+        composeRule.onNodeWithTag("btn_applock").performClick()
         waitForTag("btn_applock_now")
         tap("btn_applock_now")
 
